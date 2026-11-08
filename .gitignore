@@ -10,10 +10,7 @@ build/
 # Test coverage
 coverage/
 
-# Environment variables
-.env
-.env.*
-!.env.example
+
 
 # Logs
 *.log
