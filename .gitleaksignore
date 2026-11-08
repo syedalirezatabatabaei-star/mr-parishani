@@ -1,0 +1,5 @@
+# Task 9-2: false positives, reviewed. Both are the throwaway credentials of a SeaweedFS test
+# container started per run ("test-secret-key", "e2e-secret-key"), in commits before they were
+# made random per run. Not a credential of any real system. Fingerprints only; never a pattern.
+680120e1b4fd51b18b7fee98c531c68e8ee384fc:apps/api/test/support/files.ts:generic-api-key:53
+ec5dc8a98b43ca73cf5a4ab47336be25a6126372:apps/e2e/src/files.ts:generic-api-key:51

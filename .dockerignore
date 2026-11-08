@@ -1,0 +1,13 @@
+# Keep secrets, local state and build output out of the build context.
+.env
+.env.*
+!.env.example
+.git/
+**/node_modules/
+**/dist/
+**/.next/
+**/.turbo/
+**/coverage/
+**/*.tsbuildinfo
+docs/
+.semgrep/

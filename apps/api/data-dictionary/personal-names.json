@@ -1,0 +1,14 @@
+[
+  "public.case_intakes.name",
+  "public.center_change_requests.account_holder_name",
+  "public.centers.account_holder_name",
+  "public.doctor_secretaries.name",
+  "public.doctors.name",
+  "public.lead_import_rows.name",
+  "public.payments.payer_name",
+  "public.persons.display_name",
+  "public.report_exports.account_name",
+  "public.search_entries.doctor_name",
+  "public.search_entries.doctor_name_key",
+  "public.user_accounts.display_name"
+]

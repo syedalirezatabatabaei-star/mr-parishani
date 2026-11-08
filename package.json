@@ -1,0 +1,45 @@
+{
+  "name": "sepehr",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:bootstrap": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run db:bootstrap",
+    "db:migrate": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run db:migrate",
+    "db:generate": "pnpm --filter @sepehr/api run db:generate",
+    "account:create": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run account:create",
+    "access:grant": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run access:grant",
+    "lead:backfill-persons": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run lead:backfill-persons",
+    "catalog:rebuild-search": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run catalog:rebuild-search",
+    "contract:post-down-payments": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run contract:post-down-payments",
+    "ops:partitions": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run ops:partitions",
+    "ops:launch-check": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run ops:launch-check",
+    "ops:outbox-requeue": "turbo run build --filter=@sepehr/api && pnpm --filter @sepehr/api run ops:outbox-requeue",
+    "ci:secrets": "sh scripts/ci/secrets.sh",
+    "ci:deps": "sh scripts/ci/deps.sh",
+    "ci:sast": "sh scripts/ci/sast.sh",
+    "docker:build": "sh scripts/ci/docker-build.sh",
+    "demo:up": "turbo run build --filter=@sepehr/api --filter=@sepehr/worker --filter=@sepehr/web --filter=@sepehr/admin && pnpm --filter @sepehr/e2e demo up",
+    "demo:down": "pnpm --filter @sepehr/e2e demo down",
+    "demo:status": "pnpm --filter @sepehr/e2e demo status",
+    "demo:seed": "turbo run build --filter=@sepehr/api --filter=@sepehr/worker --filter=@sepehr/web --filter=@sepehr/admin && pnpm --filter @sepehr/e2e demo seed",
+    "demo:reset": "turbo run build --filter=@sepehr/api --filter=@sepehr/worker --filter=@sepehr/web --filter=@sepehr/admin && pnpm --filter @sepehr/e2e demo reset",
+    "demo:snapshot": "pnpm --filter @sepehr/e2e demo snapshot",
+    "demo:restore": "pnpm --filter @sepehr/e2e demo restore",
+    "demo:2fa": "pnpm --filter @sepehr/e2e demo 2fa"
+  },
+  "devDependencies": {
+    "prettier": "3.9.8",
+    "turbo": "2.10.13",
+    "typescript": "6.0.3"
+  }
+}

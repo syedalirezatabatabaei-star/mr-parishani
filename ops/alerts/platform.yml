@@ -1,0 +1,158 @@
+# Platform alert rules for the self-hosted Prometheus (task 10-3, doc 19 §10-3).
+# The critical alerts of the doc: reconciliation mismatch, queue growth (queues.yml), SMS
+# errors, disk filling, replica lag, backup failure; and the TLS renewal warning of owner
+# decision 10.3 (60 days before expiry).
+#
+# Sources, all self-hosted (rules 17–19):
+#   sepehr_*            the worker over OTLP, through the OpenTelemetry collector's Prometheus
+#                       exporter (dots become underscores; counters get _total).
+#   node_*              node_exporter on every host; its textfile collector also reads the
+#                       backup job's sepehr_backup_* lines (ops/monitoring/README.md).
+#   pg_*                postgres_exporter on the primary and the replica.
+#   redis_*             redis_exporter.
+#   probe_*             blackbox_exporter, probing each public and internal HTTPS name.
+#
+# Not checked against a running Prometheus yet (no promtool offline): run
+# `promtool check rules ops/alerts/*.yml` from the internal mirror's image in 10-1, and match
+# every name against each exporter's /metrics before relying on it.
+groups:
+  - name: sepehr-reconciliation
+    rules:
+      # The nightly reconciliations raise these through the alert sink, which counts them
+      # (CountingAlertSink); the SMS to the on-call numbers is the first channel.
+      - alert: ReconciliationMismatch
+        expr: increase(sepehr_alerts_raised_total{code=~"ledger_mismatch|ledger_invariant|trial_balance_off|settlement_mismatch|down_payment_mismatch"}[1d]) > 0
+        labels: { severity: critical }
+        annotations:
+          summary: 'Reconciliation found a mismatch ({{ $labels.code }}): runbook docs/runbooks/ledger-mismatch.md'
+      - alert: LedgerLag
+        expr: increase(sepehr_alerts_raised_total{code="ledger_lag"}[1h]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: The ledger's reporting copy lags behind the primary.
+      # The nightly runs raise nothing when clean, so silence is not proof: the worker must
+      # still be reporting (queues.yml, WorkerSilent).
+
+  - name: sepehr-sms
+    rules:
+      - alert: SmsJobsFailing
+        expr: sepehr_queue_jobs{queue="sms", state="failed"} > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: 'SMS jobs in {{ $labels.queue }} failed for good: Kavenegar runbook docs/runbooks/kavenegar-outage.md'
+      - alert: SmsBacklog
+        expr: sepehr_queue_jobs{queue="sms", state="waiting"} > 500
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 'SMS waiting in {{ $labels.queue }}: the provider may be slow or refusing.'
+
+  - name: sepehr-hosts
+    rules:
+      - alert: DiskFilling
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}
+               / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 0.85
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: '{{ $labels.instance }} {{ $labels.mountpoint }} is over 85% full.'
+      - alert: DiskAlmostFull
+        expr: |
+          (1 - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"}
+               / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) > 0.95
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: '{{ $labels.instance }} {{ $labels.mountpoint }} is over 95% full.'
+      - alert: HostDown
+        expr: up{job=~"node|postgres|redis"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: '{{ $labels.job }} on {{ $labels.instance }} does not answer.'
+
+  - name: sepehr-database
+    rules:
+      # The reports read the streaming replica (doc 19 §10-2); a replica minutes behind gives
+      # wrong dashboards, and is no standby either.
+      - alert: ReplicaLag
+        expr: pg_replication_lag_seconds > 60
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: 'The replica on {{ $labels.instance }} is {{ $value | humanizeDuration }} behind.'
+      - alert: ReplicaLagSevere
+        expr: pg_replication_lag_seconds > 900
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: The replica is over 15 minutes behind (the RPO of decision 10.2).
+
+  - name: sepehr-backup
+    rules:
+      # Owner decision 10.2: RPO 15 minutes. WAL is pushed continuously (WAL-G); the job
+      # writes the time of its last good push and base backup to the textfile collector.
+      - alert: WalArchiveStale
+        expr: time() - sepehr_backup_last_success_timestamp_seconds{kind="wal"} > 900
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: No WAL archived for over 15 minutes, the RPO is at risk. Runbook docs/runbooks/backup-restore.md
+      - alert: BaseBackupStale
+        expr: time() - sepehr_backup_last_success_timestamp_seconds{kind="base"} > 26 * 3600
+        labels: { severity: critical }
+        annotations:
+          summary: No base backup in over 26 hours.
+      - alert: SecondCopyStale
+        expr: time() - sepehr_backup_last_success_timestamp_seconds{kind="second_copy"} > 26 * 3600
+        labels: { severity: warning }
+        annotations:
+          summary: The copy to the second provider (decision 10.2) is over a day old.
+      - alert: BackupMetricsMissing
+        expr: absent(sepehr_backup_last_success_timestamp_seconds{kind="wal"})
+        for: 30m
+        labels: { severity: critical }
+        annotations:
+          summary: The backup job reports nothing; a silent backup is a failed one.
+
+  - name: sepehr-tls
+    rules:
+      # Owner decision 10.3: Arvan's edge certificate for the public names, a one-year
+      # certificate for the origin and the internal panel; warn 60 days before expiry.
+      - alert: CertificateExpiresSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 60 * 86400
+        labels: { severity: warning }
+        annotations:
+          summary: 'The certificate of {{ $labels.instance }} expires in under 60 days.'
+      # Owner 1405/08/02: renewed 60 days ahead, and warned again at 30, 14 and 7 days, to the
+      # two people named for it.
+      - alert: CertificateExpiresIn30Days
+        expr: probe_ssl_earliest_cert_expiry - time() < 30 * 86400
+        labels: { severity: warning }
+        annotations:
+          summary: 'The certificate of {{ $labels.instance }} expires in under 30 days.'
+      - alert: CertificateExpiresVerySoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 14 * 86400
+        labels: { severity: critical }
+        annotations:
+          summary: 'The certificate of {{ $labels.instance }} expires in under 14 days.'
+      - alert: CertificateExpiresIn7Days
+        expr: probe_ssl_earliest_cert_expiry - time() < 7 * 86400
+        labels: { severity: critical }
+        annotations:
+          summary: 'The certificate of {{ $labels.instance }} expires in under 7 days.'
+      - alert: EndpointDown
+        expr: probe_success == 0
+        for: 3m
+        labels: { severity: critical }
+        annotations:
+          summary: '{{ $labels.instance }} does not answer over HTTPS.'
+      # ADR-052: every financial signature is an SMS; an empty SMS account stops them all. The
+      # worker reads the credit hourly and sets the gauge against notification.sms_credit_alert_rial.
+      - alert: SmsCreditLow
+        expr: sepehr_sms_credit_low == 1 or increase(sepehr_alerts_raised_total{code="sms_credit_low"}[2h]) > 0
+        labels: { severity: critical }
+        annotations:
+          summary: The SMS account's credit is below the threshold; top it up before financial approvals stop.

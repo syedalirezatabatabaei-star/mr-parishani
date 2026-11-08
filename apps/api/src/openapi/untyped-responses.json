@@ -1,0 +1,9 @@
+[
+  "BulkImportController_report",
+  "BulkImportController_template",
+  "CollectionController_queueCsv",
+  "ContentController_bannerImage",
+  "LeadImportController_report",
+  "LeadImportController_template",
+  "PublicContentController_bannerImage"
+]

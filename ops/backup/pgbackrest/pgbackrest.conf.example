@@ -1,0 +1,23 @@
+# /etc/pgbackrest/pgbackrest.conf (owner 1405/08/03: pgBackRest accepted; a sample until the
+# server's specifications). Owner postgres, mode 0640. The two cipher passphrases are NOT here:
+# they go in /etc/pgbackrest/conf.d/secrets.conf (postgres, 0600), never in the repository:
+#   [global]
+#   repo1-cipher-pass=<from the offline 2-of-3 shares>
+#   repo2-cipher-pass=<from the offline 2-of-3 shares>
+[global]
+# The separate backup disk (never the data disk).
+repo1-path=/backup/pgbackrest
+repo1-cipher-type=aes-256-cbc
+repo1-retention-full=30
+# The outside copy: a NAS or disk outside the building, no foreign cloud.
+repo2-path=/offsite/pgbackrest
+repo2-cipher-type=aes-256-cbc
+repo2-retention-full=30
+compress-type=zst
+process-max=2
+start-fast=y
+log-level-console=warn
+log-level-file=info
+
+[sepehr]
+pg1-path=/var/lib/postgresql/17/main

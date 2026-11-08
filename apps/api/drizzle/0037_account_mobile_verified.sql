@@ -1,0 +1,1 @@
+ALTER TABLE "user_accounts" ADD COLUMN "mobile_verified_at" timestamp with time zone;

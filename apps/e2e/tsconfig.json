@@ -1,0 +1,10 @@
+{
+  "extends": "@sepehr/config/tsconfig/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src", "tests", "playwright.config.ts"]
+}

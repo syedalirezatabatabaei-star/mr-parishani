@@ -1,0 +1,36 @@
+{
+  "name": "@sepehr/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "generate": "openapi-typescript openapi.json -o src/openapi.ts"
+  },
+  "dependencies": {
+    "@sepehr/contracts": "workspace:*",
+    "openapi-fetch": "0.17.0",
+    "zod": "4.6.6"
+  },
+  "devDependencies": {
+    "@sepehr/config": "workspace:*",
+    "@types/node": "24.13.5",
+    "eslint": "10.10.0",
+    "openapi-typescript": "7.13.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  }
+}

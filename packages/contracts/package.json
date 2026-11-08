@@ -1,0 +1,36 @@
+{
+  "name": "@sepehr/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "fixtures/scoring/golden-v1.json",
+    "fixtures/scoring/ruleset-v1.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./fixtures/scoring/*.json": "./fixtures/scoring/*.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@sepehr/config": "workspace:*",
+    "@types/node": "24.13.5",
+    "eslint": "10.10.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  },
+  "dependencies": {
+    "jalaali-js": "2.0.1",
+    "zod": "4.6.6"
+  }
+}

@@ -1,0 +1,43 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Dependency install scripts are blocked unless allowed here.
+allowBuilds:
+  # Native binaries come from optional dependencies; the postinstall is only a fallback check.
+  '@swc/core': false
+  # Pulled in by Testcontainers through docker-modem. Both only compile optional native
+  # speed-ups; ssh2 falls back to pure JavaScript.
+  cpu-features: false
+  ssh2: false
+  # The postinstall only checks the installed version of its CLI helper.
+  protobufjs: false
+  # drizzle-kit: the binary comes from an optional dependency, as with @swc/core.
+  esbuild: false
+  # BullMQ serializer speed-up; prebuilt binaries come from optional dependencies and
+  # msgpackr falls back to pure JavaScript without them.
+  msgpackr-extract: false
+  # Install-time telemetry to scarf.sh (outside Iran), pulled in by @nestjs/swagger: never
+  # run (rules 17–18). It does nothing at run time.
+  '@scarf/scarf': false
+
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-s3@3.1143.0'
+  - '@aws-sdk/s3-request-presigner@3.1143.0'
+
+overrides:
+  # drizzle-kit's loader pins esbuild 0.18, affected by GHSA-67mh-4wv8-2f99 (fixed in 0.25).
+  # Dev tool only; it never reaches the production image. Drop when drizzle-kit updates.
+  '@esbuild-kit/core-utils>esbuild': 0.25.12
+  # Task 9-2 (R15): GHSA-68fv-2mgg-jv7q in source-map-js 1.2.1, pulled in by tailwind and jsdom.
+  # Build and test tools only. Drop once they depend on 1.2.2 or later.
+  'source-map-js': 1.2.2
+  # Owner 1405/08/02 (internal security review ی۲): the fixed versions of what Nest and Node's
+  # tooling pull in, same major line. Drop once the dependents require them.
+  # body-parser: GHSA-27r3-jxmh-p828; multer: GHSA-q7qp-rjg7-q26m; undici: GHSA-xjj6-f33q-929c,
+  # GHSA-4qv8-2p9j-2685, GHSA-f72v-6w45-q472.
+  'body-parser@2': 2.4.0
+  'multer@2': 2.5.0
+  'undici@8': 8.12.2
+  # zod: GHSA-mrhx-c7xc-m3w5; the lint plugin eslint-plugin-react-hooks pins 4.6.5.
+  'zod@4': 4.6.6

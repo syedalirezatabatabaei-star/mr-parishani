@@ -1,0 +1,49 @@
+# Prometheus for staging and production (task 10-3). Same file on both (owner decision
+# 10.1: staging is production's shape); only the targets' hostnames differ, set per
+# environment by the deployment (10-1) through file_sd, never edited here by hand.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/rules/queues.yml
+  - /etc/prometheus/rules/platform.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # The worker's and the API's metrics (sepehr_*), exported over OTLP to the collector,
+  # which serves them for Prometheus.
+  - job_name: otel-collector
+    static_configs:
+      - targets: ['otel-collector:8889']
+
+  - job_name: node
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/node.json']
+
+  - job_name: postgres
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/postgres.json']
+
+  - job_name: redis
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/redis.json']
+
+  # Each public and internal HTTPS name: up, and its certificate's expiry (decision 10.3).
+  - job_name: https
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    file_sd_configs:
+      - files: ['/etc/prometheus/targets/https.json']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

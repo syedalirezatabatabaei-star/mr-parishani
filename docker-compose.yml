@@ -1,0 +1,69 @@
+# Local development services. Ports are bound to localhost only. Each comes back after a
+# Docker or WSL restart (owner, 1405/07/18: clamav and seaweedfs had stayed down after one).
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?copy .env.example to .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env}
+      POSTGRES_DB: ${POSTGRES_DB:?copy .env.example to .env}
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-compatible storage for profile media (task 2-8): SeaweedFS stands in for the
+  # production provider (MinIO no longer publishes its image). Without identities it accepts
+  # any key, so S3_ACCESS_KEY and S3_SECRET_KEY are only required to be set. Buckets are
+  # created on first write.
+  seaweedfs:
+    image: chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    restart: unless-stopped
+    command:
+      [
+        'server',
+        '-dir=/data',
+        '-s3',
+        '-s3.port=8333',
+        '-volume.max=50',
+        '-master.volumeSizeLimitMB=64',
+      ]
+    ports:
+      - '127.0.0.1:${S3_PORT:-8333}:8333'
+    volumes:
+      - seaweedfs-data:/data
+
+  # ClamAV for every upload (task 2-8, rule 28). The image ships its signatures; freshclam is
+  # off because database.clamav.net refuses Iran (production needs an internal signature
+  # mirror, docs/09). Loading the signatures takes about a minute and 1.5 GB of memory.
+  clamav:
+    image: clamav/clamav@sha256:ebec5bc138401b36ae987caa1a3fa3c3b2a21ed3d51f0bfa5852825e663e67b0
+    restart: unless-stopped
+    environment:
+      CLAMAV_NO_FRESHCLAMD: 'true'
+    ports:
+      - '127.0.0.1:${CLAMAV_PORT:-3310}:3310'
+
+volumes:
+  postgres-data:
+  redis-data:
+  seaweedfs-data:

@@ -1,0 +1,11 @@
+# Paths semgrep skips. A .semgrepignore replaces semgrep's defaults, so list everything.
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+# Vendored rules and specifications, not code.
+.semgrep/
+docs/
+pnpm-lock.yaml

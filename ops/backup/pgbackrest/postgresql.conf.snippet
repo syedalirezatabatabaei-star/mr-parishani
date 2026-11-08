@@ -1,0 +1,8 @@
+# Continuous WAL archiving with pgBackRest (07-backup-restore.md §7.2; owner 1405/08/03).
+# Add to postgresql.conf (or a conf.d file), then restart PostgreSQL once.
+wal_level = replica
+archive_mode = on
+archive_command = 'pgbackrest --stanza=sepehr archive-push %p'
+# Even with no load a WAL file is closed and archived every 5 minutes: RPO under 15 minutes.
+archive_timeout = 300
+max_wal_senders = 5

@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+docs/
+CLAUDE.md
+dist/
+.next/
+.turbo/
+coverage/
+next-env.d.ts
+.semgrep/
+apps/api/drizzle/meta/
+packages/api-client/openapi.json
+packages/api-client/src/openapi.ts

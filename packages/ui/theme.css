@@ -1,0 +1,158 @@
+/*
+ * The design system's Tailwind theme and base styles (tasks 2-10, 2-11), shared by the web
+ * and admin apps. Each app's CSS imports Tailwind first, then this file.
+ */
+@import './dist/tokens.css';
+/* The shared components use the same utilities: Tailwind reads their sources too. */
+@source './src';
+
+/*
+ * Tailwind's theme from the design tokens (task 2-10): utilities such as bg-surface,
+ * text-ink-muted or rounded-md read the CSS variables, so `data-tone` switches them.
+ */
+@theme inline {
+  --font-sans: var(--font-text), system-ui, sans-serif;
+  /* No --font-display here: next/font sets it on <html>; redefining it made a cycle with
+     --font-heading, and the patient headings fell back to the text font. */
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-sunken: var(--color-sunken);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-subtle: var(--color-ink-subtle);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-on-accent: var(--color-on-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-on-accent-soft: var(--color-on-accent-soft);
+  --color-highlight: var(--color-highlight);
+  --color-on-highlight: var(--color-on-highlight);
+  --color-highlight-soft: var(--color-highlight-soft);
+  --color-on-highlight-soft: var(--color-on-highlight-soft);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+  --color-focus: var(--color-focus);
+  --color-holiday: var(--color-holiday);
+  --color-holiday-soft: var(--color-holiday-soft);
+  --color-tile-indigo: var(--color-tile-indigo);
+  --color-tile-teal: var(--color-tile-teal);
+  --color-tile-orange: var(--color-tile-orange);
+  --color-tile-rose: var(--color-tile-rose);
+  --color-tile-green: var(--color-tile-green);
+  --color-tile-blue: var(--color-tile-blue);
+  --color-tile-purple: var(--color-tile-purple);
+  --color-tile-slate: var(--color-tile-slate);
+  --color-tile-amber: var(--color-tile-amber);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+/*
+ * Metric-matched local fallbacks (owner 1405/08/02). Until a font file arrives the text is set
+ * in Tahoma, scaled to the width of the same Persian text in Vazirmatn or Estedad and given
+ * their ascent and descent, so the page does not move when the font swaps in (the phone
+ * search page shifted by CLS 0.188 when the files came after the first paint). Measured in
+ * Chrome with canvas measureText on a sample of the patient pages' words, at 100px.
+ * Without Tahoma (most phones) the face is skipped and system-ui follows, as before.
+ */
+@font-face {
+  font-family: 'Sepehr Text Fallback';
+  src: local('Tahoma');
+  font-weight: 100 549;
+  size-adjust: 93.64%;
+  ascent-override: 109.99%;
+  descent-override: 57.67%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Sepehr Text Fallback';
+  src: local('Tahoma Bold'), local('Tahoma-Bold');
+  font-weight: 550 900;
+  size-adjust: 84.42%;
+  ascent-override: 122.02%;
+  descent-override: 63.97%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Sepehr Display Fallback';
+  src: local('Tahoma');
+  font-weight: 100 599;
+  size-adjust: 96.52%;
+  ascent-override: 106.72%;
+  descent-override: 52.84%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Sepehr Display Fallback';
+  src: local('Tahoma Bold'), local('Tahoma-Bold');
+  font-weight: 600 749;
+  size-adjust: 86.26%;
+  ascent-override: 120.57%;
+  descent-override: 61.44%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Sepehr Display Fallback';
+  src: local('Tahoma Bold'), local('Tahoma-Bold');
+  font-weight: 750 900;
+  size-adjust: 86.57%;
+  ascent-override: 121.3%;
+  descent-override: 62.38%;
+  line-gap-override: 0%;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-text), system-ui, sans-serif;
+    font-size: 100%;
+    line-height: var(--leading-base);
+    color: var(--color-ink);
+    background: var(--color-canvas);
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    line-height: var(--leading-tight);
+  }
+  /* A focus ring every interactive element shows when reached by keyboard (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  /* Money and counts line up in columns: every digit the same width (Vazirmatn tnum). */
+  .figures {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+/*
+ * A step of a form coming in (owner 1405/08/10: the sign-in's steps): a short rise and fade.
+ * Its duration is a token, so it is 0 for who asked for less motion.
+ */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+@utility step-in {
+  animation: step-in var(--duration-slow) var(--ease-out);
+}

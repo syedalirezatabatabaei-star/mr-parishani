@@ -1,0 +1,43 @@
+# Alert rules for the self-hosted Prometheus / Grafana (task 0-7, ADR-016).
+# The worker exports these metrics over OTLP; the collector's Prometheus exporter turns
+# dots into underscores and appends units (e.g. sepehr.outbox.oldest_pending_age with
+# unit s becomes sepehr_outbox_oldest_pending_age_seconds). Check the names against the
+# collector's /metrics before relying on them.
+#
+# The thresholds below mirror the defaults of ops.outbox_alert_thresholds and
+# ops.queue_alert_thresholds. The worker itself compares against the live configuration
+# every minute and texts the on-call numbers; these rules are the independent second
+# channel, and also fire if the worker itself stops reporting.
+groups:
+  - name: sepehr-queues
+    rules:
+      - alert: OutboxBacklog
+        expr: sepehr_outbox_pending > 1000
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: More than 1000 domain events wait in the outbox.
+      - alert: OutboxStale
+        expr: sepehr_outbox_oldest_pending_age_seconds > 300
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: The oldest unpublished domain event has waited over 5 minutes.
+      - alert: QueueBacklog
+        expr: sepehr_queue_jobs{state="waiting"} > 5000
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Queue {{ $labels.queue }} has more than 5000 waiting jobs.'
+      - alert: QueueFailedJobs
+        expr: sepehr_queue_jobs{state="failed"} > 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: 'Queue {{ $labels.queue }} has jobs that failed for good.'
+      - alert: WorkerSilent
+        expr: absent(sepehr_outbox_pending)
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: The worker has stopped reporting queue metrics.

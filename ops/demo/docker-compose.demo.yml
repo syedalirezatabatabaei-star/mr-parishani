@@ -1,0 +1,76 @@
+# The employer demo stack (owner 1405/08/07): its own compose project and its own new volumes,
+# apart from the development stack (docker-compose.yml) and its data. Every port on 127.0.0.1.
+# Survives a Docker or Windows restart. Started and stopped by `pnpm demo:up` / `demo:down`.
+#
+# The database runs under libfaketime: the seed writes six months of history through the
+# real services by moving the clock (ops/demo/clock/faketimerc); after the seed it is "+0".
+name: sepehr-demo
+
+services:
+  postgres:
+    image: sepehr-demo-postgres:17
+    build:
+      context: .
+      dockerfile: postgres-faketime.Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: demo_admin
+      POSTGRES_PASSWORD_FILE: /run/demo/pg-admin-password
+      POSTGRES_DB: sepehr_demo
+      LD_PRELOAD: /usr/lib/faketime/libfaketime.so.1
+      FAKETIME_TIMESTAMP_FILE: /faketime/faketimerc
+      FAKETIME_NO_CACHE: '1'
+      DONT_FAKE_MONOTONIC: '1'
+    ports:
+      - '127.0.0.1:5442:5432'
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./clock:/faketime:ro
+      - ./secrets:/run/demo:ro
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'demo_admin', '-d', 'sepehr_demo']
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine@sha256:bd999b5cfee25fb24b8320a31fddbd69f462df44c8138c66e369582937beebc0
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:6389:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 20
+
+  seaweedfs:
+    image: chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    restart: unless-stopped
+    command:
+      [
+        'server',
+        '-dir=/data',
+        '-s3',
+        '-s3.port=8333',
+        '-volume.max=50',
+        '-master.volumeSizeLimitMB=64',
+      ]
+    ports:
+      - '127.0.0.1:8343:8333'
+    volumes:
+      - seaweedfs-data:/data
+
+  clamav:
+    image: clamav/clamav@sha256:ebec5bc138401b36ae987caa1a3fa3c3b2a21ed3d51f0bfa5852825e663e67b0
+    restart: unless-stopped
+    environment:
+      CLAMAV_NO_FRESHCLAMD: 'true'
+    ports:
+      - '127.0.0.1:3320:3310'
+
+volumes:
+  pg-data:
+  redis-data:
+  seaweedfs-data:

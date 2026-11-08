@@ -1,0 +1,3 @@
+@import 'tailwindcss';
+/* Tokens, theme and base styles of the design system (packages/ui). */
+@import '@sepehr/ui/theme.css';

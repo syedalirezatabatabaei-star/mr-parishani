@@ -1,0 +1,54 @@
+# Task 8-2's acceptance test: a throwaway WordPress with the plugin mounted read only. Run by
+# apps/e2e/src/wordpress-acceptance.ts (`pnpm --filter @sepehr/e2e wordpress:acceptance`),
+# which gives the passwords at run time; nothing here is a real credential. Not run in CI:
+# it needs the WordPress images (pulled with the owner's leave, 1405/07/17).
+name: sepehr-wp-acceptance
+
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${WP_DB_PASSWORD:?set by the test runner}
+      MARIADB_RANDOM_ROOT_PASSWORD: '1'
+    volumes:
+      - db:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:6.6-php8.1-apache
+    depends_on: [db]
+    ports:
+      - '127.0.0.1:8099:80'
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:?set by the test runner}
+    # The system's API runs on this machine (the e2e stack, port 3100).
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - wp:/var/www/html
+      - ../sepehr-lead-form:/var/www/html/wp-content/plugins/sepehr-lead-form:ro
+
+  cli:
+    image: wordpress:cli-php8.1
+    depends_on: [db, wordpress]
+    user: '33:33'
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:?set by the test runner}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - wp:/var/www/html
+      - ../sepehr-lead-form:/var/www/html/wp-content/plugins/sepehr-lead-form:ro
+    entrypoint: ['wp']
+    profiles: [cli]
+
+volumes:
+  db:
+  wp:
